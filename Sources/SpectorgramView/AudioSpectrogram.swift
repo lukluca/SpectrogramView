@@ -256,9 +256,7 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
                                 vImage_Flags(kvImageNoFlags))
         
         if let image = try? rotatedImageBuffer.createCGImage(format: rgbImageFormat) {
-            DispatchQueue.main.async {
-                self.contents = image
-            }
+            contents = image
         }
     }
 }
