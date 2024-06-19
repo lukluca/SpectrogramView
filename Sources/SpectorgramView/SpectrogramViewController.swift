@@ -98,8 +98,10 @@ public final class SpectrogramViewController: UIViewController {
     }
     
     private func bindSpectrogram() {
-        audioSpectrogram?.showError = { [weak self] error in
-            self?.showError?(error)
+        audioSpectrogram?.showError = { error in
+            Task { @MainActor [weak self] in
+                self?.showError?(error)
+            }
         }
     }
 }
