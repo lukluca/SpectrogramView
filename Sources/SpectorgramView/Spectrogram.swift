@@ -23,6 +23,8 @@ public final class SimulatorSpectrogramController {
     public private(set) var frequencies = [Float]()
     public private(set) var rawAudioData = [Int16]()
     
+    public init() {}
+    
     private var timer: Timer?
     
     public func start() {
