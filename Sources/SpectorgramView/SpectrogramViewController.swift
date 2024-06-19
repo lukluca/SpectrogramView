@@ -15,8 +15,8 @@ public final class SpectrogramViewController: UIViewController {
     
     public var showError: ((SpectrogramError) -> Void)?
     
-    private(set) var frequencies = [Float]()
-    private(set) var rawAudioData = [Int16]()
+    public private(set) var frequencies = [Float]()
+    public private(set) var rawAudioData = [Int16]()
     
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -40,7 +40,7 @@ public final class SpectrogramViewController: UIViewController {
     
     //MARK: Start / Stop
     
-    func start() {
+    public func start() {
         setSpectrogram(darkMode: false)
         
         audioSpectrogram?.didAppendFrequencies = { values in
@@ -58,7 +58,7 @@ public final class SpectrogramViewController: UIViewController {
         audioSpectrogram?.startRunning()
     }
     
-    func start(rawAudioData: [Int16]) {
+    public func start(rawAudioData: [Int16]) {
         resetSpectrogram()
 
         setSpectrogram(darkMode: false)
@@ -66,11 +66,11 @@ public final class SpectrogramViewController: UIViewController {
         audioSpectrogram?.startRunning(rawAudioData: rawAudioData)
     }
     
-    func stop() {
+    public func stop() {
         audioSpectrogram?.stopRunning()
     }
     
-    func reset() {
+    public func reset() {
         frequencies.removeAll()
         resetSpectrogram()
     }

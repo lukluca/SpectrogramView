@@ -7,7 +7,7 @@
 
 import Foundation
 
-protocol SpectrogramController {
+public protocol SpectrogramController {
     var rawAudioData: [Int16] { get }
     var frequencies: [Float] { get }
     
@@ -18,14 +18,14 @@ protocol SpectrogramController {
 
 #if targetEnvironment(simulator)
 
-final class SimulatorSpectrogramController {
+public final class SimulatorSpectrogramController {
     
-    private(set) var frequencies = [Float]()
-    private(set) var rawAudioData = [Int16]()
+    public private(set) var frequencies = [Float]()
+    public private(set) var rawAudioData = [Int16]()
     
     private var timer: Timer?
     
-    func start() {
+    public func start() {
         stop()
         timer = Timer.scheduledTimer(timeInterval: 0.1,
                                      target: self,
@@ -33,15 +33,15 @@ final class SimulatorSpectrogramController {
                                      userInfo: nil,
                                      repeats: true)
     }
-    func reset() {
+    public func reset() {
         frequencies.removeAll()
     }
-    func stop() {
+    public func stop() {
         timer?.invalidate()
         timer = nil
     }
     
-    @objc func fireTimer() {
+    @objc private func fireTimer() {
         frequencies.append(Float.random(min: -10, max: 10))
     }
 }
