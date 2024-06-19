@@ -8,17 +8,17 @@
 import UIKit
 
 @MainActor
-final class SpectrogramViewController: UIViewController {
+public final class SpectrogramViewController: UIViewController {
 
     /// The audio spectrogram layer.
     private var audioSpectrogram: AudioSpectrogram?
     
-    var showError: ((SpectrogramError) -> Void)?
+    public var showError: ((SpectrogramError) -> Void)?
     
     private(set) var frequencies = [Float]()
     private(set) var rawAudioData = [Int16]()
     
-    override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
 
         setSpectrogram()
@@ -26,15 +26,15 @@ final class SpectrogramViewController: UIViewController {
         view.backgroundColor = .black
     }
 
-    override func viewDidLayoutSubviews() {
+    public override func viewDidLayoutSubviews() {
         audioSpectrogram?.frame = view.frame
     }
     
-    override var prefersHomeIndicatorAutoHidden: Bool {
+    public override var prefersHomeIndicatorAutoHidden: Bool {
         true
     }
     
-    override var prefersStatusBarHidden: Bool {
+    public override var prefersStatusBarHidden: Bool {
         true
     }
     
@@ -106,7 +106,7 @@ final class SpectrogramViewController: UIViewController {
 
 extension SpectrogramViewController: @preconcurrency SpectrogramController {}
 
-enum SpectrogramError: Error {
+public enum SpectrogramError: Error {
     case requiresMicrophoneAccess
     case cantCreateMicrophone
 }
