@@ -41,12 +41,14 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
         super.init(layer: layer)
     }
     
-    func configure() {
+    func configure(capturingSession: Bool) {
         contentsGravity = .resize
         
-        configureCaptureSession()
-        audioOutput.setSampleBufferDelegate(self,
-                                            queue: captureQueue)
+        if capturingSession {
+            configureCaptureSession()
+            audioOutput.setSampleBufferDelegate(self,
+                                                queue: captureQueue)
+        }
     }
     
     // MARK: Properties
@@ -58,16 +60,16 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
     
     /// Determines the overlap between frames.
     static let hopCount = 512
-
-    let captureSession = AVCaptureSession()
-    let audioOutput = AVCaptureAudioDataOutput()
-    let captureQueue = DispatchQueue(label: "captureQueue",
-                                     qos: .userInitiated,
-                                     attributes: [],
-                                     autoreleaseFrequency: .workItem)
-    let sessionQueue = DispatchQueue(label: "sessionQueue",
-                                     attributes: [],
-                                     autoreleaseFrequency: .workItem)
+    
+    lazy var captureSession = AVCaptureSession()
+    lazy var audioOutput = AVCaptureAudioDataOutput()
+    lazy var captureQueue = DispatchQueue(label: "captureQueue",
+                                          qos: .userInitiated,
+                                          attributes: [],
+                                          autoreleaseFrequency: .workItem)
+    lazy var sessionQueue = DispatchQueue(label: "sessionQueue",
+                                          attributes: [],
+                                          autoreleaseFrequency: .workItem)
     
     let forwardDCT = vDSP.DCT(count: sampleCount,
                               transformType: .II)!
@@ -78,7 +80,7 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
                                     count: sampleCount,
                                     isHalfWindow: false)
     
-    let dispatchSemaphore = DispatchSemaphore(value: 1)
+    lazy var dispatchSemaphore = DispatchSemaphore(value: 1)
     
     /// The highest frequency that the app can represent.
     ///

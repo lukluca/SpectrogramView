@@ -61,7 +61,7 @@ public final class SpectrogramViewController: UIViewController {
     public func start(rawAudioData: [Int16]) {
         resetSpectrogram()
 
-        setSpectrogram(darkMode: false)
+        setSpectrogram(darkMode: false, capturingSession: false)
         
         audioSpectrogram?.startRunning(rawAudioData: rawAudioData)
     }
@@ -79,7 +79,7 @@ public final class SpectrogramViewController: UIViewController {
         audioSpectrogram?.removeFromSuperlayer()
     }
     
-    private func setSpectrogram(darkMode: Bool? = nil) {
+    private func setSpectrogram(darkMode: Bool? = nil, capturingSession: Bool = true) {
         guard audioSpectrogram?.superlayer == nil else {
             return
         }
@@ -92,7 +92,7 @@ public final class SpectrogramViewController: UIViewController {
         audioSpectrogram = spectrogram
         bindSpectrogram()
         
-        spectrogram.configure()
+        spectrogram.configure(capturingSession: capturingSession)
         
         view.layer.addSublayer(spectrogram)
     }
