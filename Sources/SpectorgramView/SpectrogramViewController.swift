@@ -21,7 +21,7 @@ public final class SpectrogramViewController: UIViewController {
     public override func viewDidLoad() {
         super.viewDidLoad()
 
-        setSpectrogram()
+        setSpectrogram(capturingSession: false)
         
         view.backgroundColor = .black
     }
