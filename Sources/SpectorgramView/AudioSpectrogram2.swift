@@ -24,7 +24,7 @@ public final class AudioSpectrogram: NSObject, ObservableObject {
     
     private var bag = [AnyCancellable]()
   
-    override init() {
+    override public init() {
         super.init()
         
         $configuation.sink { [weak self] config in
