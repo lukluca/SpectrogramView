@@ -12,7 +12,7 @@ import Combine
 public final class SpectrogramViewController: UIViewController {
 
     /// The audio spectrogram
-    private lazy var audioSpectrogram = AudioSpectrogram2()
+    private lazy var audioSpectrogram = AudioSpectrogram()
     private var bag = [AnyCancellable]()
     
     public var showError: ((SpectrogramError) -> Void)?

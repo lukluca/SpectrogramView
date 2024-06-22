@@ -10,17 +10,17 @@ import Combine
 import AVFoundation
 
 @MainActor
-final class AudioSpectrogram2: NSObject, ObservableObject {
+public final class AudioSpectrogram: NSObject, ObservableObject {
     
-    @Published var configuation = Configuration()
+    @Published public var configuation = Configuration()
     
-    @Published var outputImage = AudioSpectrogram2.emptyCGImage
+    @Published public var outputImage = AudioSpectrogram.emptyCGImage
     
-    @Published var frequencies = [Float]()
+    @Published public var frequencies = [Float]()
     /// A buffer that contains the raw audio data from AVFoundation.
-    @Published var audioData = [Int16]()
+    @Published public var audioData = [Int16]()
     
-    @Published var error: SpectrogramError?
+    @Published public var error: SpectrogramError?
     
     private var bag = [AnyCancellable]()
   
@@ -42,7 +42,7 @@ final class AudioSpectrogram2: NSObject, ObservableObject {
     
     // MARK: Properties
     
-    lazy var melSpectrogram = MelSpectrogram(sampleCount: AudioSpectrogram2.sampleCount)
+    lazy var melSpectrogram = MelSpectrogram(sampleCount: AudioSpectrogram.sampleCount)
     
     /// The number of samples per frame — the height of the spectrogram.
     static let sampleCount = 1024
@@ -98,20 +98,20 @@ final class AudioSpectrogram2: NSObject, ObservableObject {
     /// RGB vImage buffer that contains a vertical representation of the audio spectrogram.
     
     let redBuffer = vImage.PixelBuffer<vImage.PlanarF>(
-        width: AudioSpectrogram2.sampleCount,
-        height: AudioSpectrogram2.bufferCount)
+        width: AudioSpectrogram.sampleCount,
+        height: AudioSpectrogram.bufferCount)
     
     let greenBuffer = vImage.PixelBuffer<vImage.PlanarF>(
-        width: AudioSpectrogram2.sampleCount,
-        height: AudioSpectrogram2.bufferCount)
+        width: AudioSpectrogram.sampleCount,
+        height: AudioSpectrogram.bufferCount)
     
     let blueBuffer = vImage.PixelBuffer<vImage.PlanarF>(
-        width: AudioSpectrogram2.sampleCount,
-        height: AudioSpectrogram2.bufferCount)
+        width: AudioSpectrogram.sampleCount,
+        height: AudioSpectrogram.bufferCount)
     
     let rgbImageBuffer = vImage.PixelBuffer<vImage.InterleavedFx3>(
-        width: AudioSpectrogram2.sampleCount,
-        height: AudioSpectrogram2.bufferCount)
+        width: AudioSpectrogram.sampleCount,
+        height: AudioSpectrogram.bufferCount)
 
 
     /// A reusable array that contains the current frame of time-domain audio data as single-precision
@@ -166,8 +166,8 @@ final class AudioSpectrogram2: NSObject, ObservableObject {
                       frequencyDomainBuffer,
                       result: &frequencyDomainBuffer)
         
-        if frequencyDomainValues.count > AudioSpectrogram2.sampleCount {
-            frequencyDomainValues.removeFirst(AudioSpectrogram2.sampleCount)
+        if frequencyDomainValues.count > AudioSpectrogram.sampleCount {
+            frequencyDomainValues.removeFirst(AudioSpectrogram.sampleCount)
         }
         
         frequencyDomainValues.append(contentsOf: frequencyDomainBuffer)
@@ -175,7 +175,7 @@ final class AudioSpectrogram2: NSObject, ObservableObject {
     }
     
     private func makeAudioSpectrogramEmptyImage() throws -> CGImage {
-        guard let empty = AudioSpectrogram2.emptyCGImage else {
+        guard let empty = AudioSpectrogram.emptyCGImage else {
             throw SpectrogramError.impossibleCreateImage
         }
         return empty
@@ -190,12 +190,12 @@ final class AudioSpectrogram2: NSObject, ObservableObject {
             
             let planarImageBuffer = vImage.PixelBuffer(
                 data: data,
-                width: AudioSpectrogram2.sampleCount,
-                height: AudioSpectrogram2.bufferCount,
-                byteCountPerRow: AudioSpectrogram2.sampleCount * MemoryLayout<Float>.stride,
+                width: AudioSpectrogram.sampleCount,
+                height: AudioSpectrogram.bufferCount,
+                byteCountPerRow: AudioSpectrogram.sampleCount * MemoryLayout<Float>.stride,
                 pixelFormat: vImage.PlanarF.self)
             
-            AudioSpectrogram2.multidimensionalLookupTable.apply(
+            AudioSpectrogram.multidimensionalLookupTable.apply(
                 sources: [planarImageBuffer],
                 destinations: [redBuffer, greenBuffer, blueBuffer],
                 interpolation: .half)
@@ -221,7 +221,7 @@ import AppKit
 import SwiftUI
 
 // MARK: Utility functions
-extension AudioSpectrogram2 {
+extension AudioSpectrogram {
     
     /// Returns the RGB values from a blue -> red -> green color map for a specified value.
     ///
@@ -311,28 +311,28 @@ extension AudioSpectrogram2 {
     }()
 }
 
-extension AudioSpectrogram2 {
+extension AudioSpectrogram {
     
     /// An enumeration that specifies the drum loop provider's mode.
-    enum Mode: String, CaseIterable, Identifiable {
+    public enum Mode: String, CaseIterable, Identifiable {
         case linear
         case mel
         
-        var id: Self { self }
+        public var id: Self { self }
     }
     
-    struct Configuration {
-        let gain: Double
-        let zeroReference: Double
-        let darkMode: Bool
-        let mode: Mode
-        let requiresMicrophone: Bool
+    public struct Configuration {
+        public let gain: Double
+        public let zeroReference: Double
+        public let darkMode: Bool
+        public let mode: Mode
+        public let requiresMicrophone: Bool
         
-        init(gain: Double = 0.025, 
-             zeroReference: Double = 1000,
-             darkMode: Bool = true, 
-             mode: Mode = .linear,
-             requiresMicrophone: Bool = true) {
+        public init(gain: Double = 0.025,
+                    zeroReference: Double = 1000,
+                    darkMode: Bool = true,
+                    mode: Mode = .linear,
+                    requiresMicrophone: Bool = true) {
             self.gain = gain
             self.zeroReference = zeroReference
             self.darkMode = darkMode

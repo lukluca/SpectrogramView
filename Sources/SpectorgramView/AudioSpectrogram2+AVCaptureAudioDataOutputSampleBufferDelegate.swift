@@ -9,7 +9,7 @@ import AVFoundation
 
 // MARK: AVCaptureAudioDataOutputSampleBufferDelegate and AVFoundation Support
 
-extension AudioSpectrogram2: AVCaptureAudioDataOutputSampleBufferDelegate {
+extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
  
     @nonobjc func captureOutput(_ output: AVCaptureOutput,
                        didOutput sampleBuffer: CMSampleBuffer,
@@ -47,7 +47,7 @@ extension AudioSpectrogram2: AVCaptureAudioDataOutputSampleBufferDelegate {
         /// 1024 samples, the app adds the contents of each audio sample buffer to `rawAudioData`.
         ///
         /// The following code creates an array from `data` and appends it to  `audioData`:
-        if self.rawAudioData.count < AudioSpectrogram2.sampleCount * 2 {
+        if self.rawAudioData.count < AudioSpectrogram.sampleCount * 2 {
             let actualSampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
             
             let pointer = data.bindMemory(to: Int16.self,
@@ -68,9 +68,9 @@ extension AudioSpectrogram2: AVCaptureAudioDataOutputSampleBufferDelegate {
         ///
         /// By removing fewer elements than each step processes, the rendered frames of data overlap,
         /// ensuring no loss of audio data.
-        while rawAudioData.count >= AudioSpectrogram2.sampleCount {
-            let dataToProcess = Array(rawAudioData[0 ..< AudioSpectrogram2.sampleCount])
-            rawAudioData.removeFirst(AudioSpectrogram2.hopCount)
+        while rawAudioData.count >= AudioSpectrogram.sampleCount {
+            let dataToProcess = Array(rawAudioData[0 ..< AudioSpectrogram.sampleCount])
+            rawAudioData.removeFirst(AudioSpectrogram.hopCount)
             processData(values: dataToProcess)
         }
         
@@ -158,7 +158,7 @@ extension AudioSpectrogram2: AVCaptureAudioDataOutputSampleBufferDelegate {
     }
     
     /// Starts the audio spectrogram.
-    func startRunning() {
+    public func startRunning() {
         if configuation.requiresMicrophone {
             sessionQueue.async {
                 if AVCaptureDevice.authorizationStatus(for: .audio) == .authorized {
@@ -176,7 +176,7 @@ extension AudioSpectrogram2: AVCaptureAudioDataOutputSampleBufferDelegate {
     }
     
     /// Stops the audio spectrogram.
-    func stopRunning() {
+    public func stopRunning() {
         guard configuation.requiresMicrophone else {
             return
         }
