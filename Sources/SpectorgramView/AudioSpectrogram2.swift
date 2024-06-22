@@ -80,7 +80,7 @@ public final class AudioSpectrogram: NSObject, ObservableObject {
     /// this value.
     var nyquistFrequency: Float?
     
-    var rawAudioData = [Int16]()
+    public var rawAudioData = [Int16]()
     
     /// Raw frequency-domain values.
     var frequencyDomainValues = [Float](repeating: 0,
