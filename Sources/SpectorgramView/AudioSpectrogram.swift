@@ -5,6 +5,7 @@
 //  Created by Luca Tagliabue on 07/09/21.
 //
 
+/*
 import AVFoundation
 import Accelerate
 
@@ -279,3 +280,4 @@ extension AudioSpectrogram {
                 Pixel_8(blue * 255))
     }
 }
+*/

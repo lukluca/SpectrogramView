@@ -10,6 +10,7 @@ import Foundation
 public protocol SpectrogramController {
     var rawAudioData: [Int16] { get }
     var frequencies: [Float] { get }
+    var darkMode: Bool { get set }
     
     func start()
     func stop()
@@ -22,6 +23,7 @@ public final class SimulatorSpectrogramController {
     
     public private(set) var frequencies = [Float]()
     public private(set) var rawAudioData = [Int16]()
+    public var darkMode = false
     
     public init() {}
     
