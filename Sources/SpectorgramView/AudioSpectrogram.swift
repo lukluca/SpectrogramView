@@ -8,9 +8,13 @@
 import AVFoundation
 import Accelerate
 
-final class AudioSpectrogram: CALayer, @unchecked Sendable {
+@available(iOS 16.0, *)
+@MainActor
+final class AudioSpectrogram: NSObject, ObservableObject {
     
     @MainActor static var darkMode = true
+    
+    @Published var outputImage = AudioSpectrogram.emptyCGImage
     
     var didAppendFrequencies: (([Float]) -> Void)?
     var didAppendAudioData: (([Int16]) -> Void)?
@@ -37,13 +41,8 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override public init(layer: Any) {
-        super.init(layer: layer)
-    }
-    
     func configure(capturingSession: Bool) {
-        contentsGravity = .resize
-        
+    
         if capturingSession {
             configureCaptureSession()
             audioOutput.setSampleBufferDelegate(self,
@@ -108,31 +107,24 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
         return format
     }()
     
-    /// RGB vImage buffer that contains a vertical representation of the audio spectrogram.
-    lazy var rgbImageBuffer: vImage_Buffer = {
-        guard let buffer = try? vImage_Buffer(width: AudioSpectrogram.sampleCount,
-                                              height: AudioSpectrogram.bufferCount,
-                                              bitsPerPixel: rgbImageFormat.bitsPerPixel) else {
-            fatalError("Unable to initialize image buffer.")
-        }
-        return buffer
-    }()
-    
     /// RGB vImage buffer that contains a horizontal representation of the audio spectrogram.
-    lazy var rotatedImageBuffer: vImage_Buffer = {
-        guard let buffer = try? vImage_Buffer(width: AudioSpectrogram.bufferCount,
-                                              height: AudioSpectrogram.sampleCount,
-                                              bitsPerPixel: rgbImageFormat.bitsPerPixel)  else {
-            fatalError("Unable to initialize rotated image buffer.")
-        }
-        return buffer
-    }()
+    lazy var rgbImageBuffer = vImage.PixelBuffer<vImage.InterleavedFx3>(
+        width: AudioSpectrogram.sampleCount,
+        height: AudioSpectrogram.bufferCount)
     
-    deinit {
-        rgbImageBuffer.free()
-        rotatedImageBuffer.free()
-    }
+    let redBuffer = vImage.PixelBuffer<vImage.PlanarF>(
+            width: AudioSpectrogram.sampleCount,
+            height: AudioSpectrogram.bufferCount)
+
+    let greenBuffer = vImage.PixelBuffer<vImage.PlanarF>(
+            width: AudioSpectrogram.sampleCount,
+            height: AudioSpectrogram.bufferCount)
     
+    let blueBuffer = vImage.PixelBuffer<vImage.PlanarF>(
+            width: AudioSpectrogram.sampleCount,
+            height: AudioSpectrogram.bufferCount)
+    
+    /*
     // Lookup tables for color transforms.
     @MainActor static var redTable: [Pixel_8] = (0 ... 255).map {
         brgValue(from: $0, darkMode: true).red
@@ -158,6 +150,7 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
     @MainActor static var lightBlueTable: [Pixel_8] = (0 ... 255).map {
         brgValue(from: $0, darkMode: false).blue
     }
+     */
     
     /// A reusable array that contains the current frame of time domain audio data as single-precision
     /// values.
@@ -216,50 +209,27 @@ final class AudioSpectrogram: CALayer, @unchecked Sendable {
         return maxValue[0] * 2
     }()
 
-    /// Creates an audio spectrogram `CGImage` from `frequencyDomainValues` and renders it
-    /// to the `spectrogramLayer` layer.
-    @MainActor func createAudioSpectrogram() {
-        let maxFloats: [Float] = [255, maxFloat, maxFloat, maxFloat]
-        let minFloats: [Float] = [255, 0, 0, 0]
-        
+    /// Creates an audio spectrogram `CGImage` from `frequencyDomainValues`
+    @MainActor func makeAudioSpectrogramImage() -> CGImage {
         frequencyDomainValues.withUnsafeMutableBufferPointer {
-            var planarImageBuffer = vImage_Buffer(data: $0.baseAddress!,
-                                                  height: vImagePixelCount(AudioSpectrogram.bufferCount),
-                                                  width: vImagePixelCount(AudioSpectrogram.sampleCount),
-                                                  rowBytes: AudioSpectrogram.sampleCount * MemoryLayout<Float>.stride)
             
-            vImageConvert_PlanarFToARGB8888(&planarImageBuffer,
-                                            &planarImageBuffer, &planarImageBuffer, &planarImageBuffer,
-                                            &rgbImageBuffer,
-                                            maxFloats, minFloats,
-                                            vImage_Flags(kvImageNoFlags))
+            let planarImageBuffer = vImage.PixelBuffer(
+                data: $0.baseAddress!,
+                width: AudioSpectrogram.sampleCount,
+                height: AudioSpectrogram.bufferCount,
+                byteCountPerRow: AudioSpectrogram.sampleCount * MemoryLayout<Float>.stride,
+                pixelFormat: vImage.PlanarF.self)
+            
+            AudioSpectrogram.multidimensionalLookupTable.apply(
+                sources: [planarImageBuffer],
+                destinations: [redBuffer, greenBuffer, blueBuffer],
+                interpolation: .half)
+            
+            rgbImageBuffer.interleave(
+                planarSourceBuffers: [redBuffer, greenBuffer, blueBuffer])
         }
         
-        if AudioSpectrogram.darkMode {
-            vImageTableLookUp_ARGB8888(&rgbImageBuffer, &rgbImageBuffer,
-                                       nil,
-                                       &AudioSpectrogram.redTable,
-                                       &AudioSpectrogram.greenTable,
-                                       &AudioSpectrogram.blueTable,
-                                       vImage_Flags(kvImageNoFlags))
-        } else {
-            vImageTableLookUp_ARGB8888(&rgbImageBuffer, &rgbImageBuffer,
-                                       nil,
-                                       &AudioSpectrogram.lightRedTable,
-                                       &AudioSpectrogram.lightGreenTable,
-                                       &AudioSpectrogram.lightBlueTable,
-                                       vImage_Flags(kvImageNoFlags))
-        }
-        
-        vImageRotate90_ARGB8888(&rgbImageBuffer,
-                                &rotatedImageBuffer,
-                                UInt8(kRotate90DegreesCounterClockwise),
-                                [UInt8()],
-                                vImage_Flags(kvImageNoFlags))
-        
-        if let image = try? rotatedImageBuffer.createCGImage(format: rgbImageFormat) {
-            contents = image
-        }
+        return rgbImageBuffer.makeCGImage(cgImageFormat: rgbImageFormat) ?? AudioSpectrogram.emptyCGImage
     }
 }
 
@@ -309,4 +279,3 @@ extension AudioSpectrogram {
                 Pixel_8(blue * 255))
     }
 }
-
