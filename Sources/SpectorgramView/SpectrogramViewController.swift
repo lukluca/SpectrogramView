@@ -163,3 +163,22 @@ public enum SpectrogramError: LocalizedError {
         }
     }
 }
+
+extension SpectrogramError: Equatable {
+    public static func == (lhs: SpectrogramError, rhs: SpectrogramError) -> Bool {
+        switch (lhs, rhs) {
+        case (.requiresMicrophoneAccess, .requiresMicrophoneAccess):
+            return true
+        case (.cantCreateMicrophone, .cantCreateMicrophone):
+            return true
+        case (.cantCreateMicrophoneDevice, .cantCreateMicrophoneDevice):
+            return true
+        case (.impossibleCreateImage, .impossibleCreateImage):
+            return true
+        case (.cantAddAudioOutput, .cantAddAudioOutput):
+            return true
+        default:
+            return false
+        }
+    }
+}
