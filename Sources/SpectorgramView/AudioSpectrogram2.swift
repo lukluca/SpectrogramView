@@ -359,7 +359,14 @@ private extension CGImage {
         let image = CIImage(cgImage: self)
         guard let filter = CIFilter(name: "CIColorInvert") else { return nil }
         filter.setValue(image, forKey: kCIInputImageKey)
-        let inverted =  filter.value(forKey: kCIOutputImageKey) as? CIImage
-        return inverted?.cgImage
+        if let inverted = filter.value(forKey: kCIOutputImageKey) as? CIImage {
+            if let result = inverted.cgImage {
+                return result
+            }
+            
+            return CIContext().createCGImage(inverted, from: .infinite)
+        }
+        
+        return nil
     }
 }
