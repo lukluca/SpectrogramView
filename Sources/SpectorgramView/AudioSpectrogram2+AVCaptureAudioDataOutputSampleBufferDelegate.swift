@@ -167,7 +167,6 @@ actor SessionQueue {
         if captureSession.canAddOutput(audioOutput) {
             captureSession.addOutput(audioOutput)
         } else {
-            captureSession.commitConfiguration()
             self.onError?(.cantAddAudioOutput)
         }
 
