@@ -212,6 +212,12 @@ public final class AudioSpectrogram: NSObject, ObservableObject {
                 return try makeAudioSpectrogramEmptyImage()
             }
             
+            if !configuation.darkMode {
+                guard let inverrted = image.invertColor() else {
+                    return try makeAudioSpectrogramEmptyImage()
+                }
+                return inverrted
+            }
             return image
         }
     }
@@ -344,5 +350,16 @@ extension AudioSpectrogram {
             self.mode = mode
             self.requiresMicrophone = requiresMicrophone
         }
+    }
+}
+
+private extension CGImage {
+    
+    func invertColor() -> CGImage? {
+        let image = CIImage(cgImage: self)
+        guard let filter = CIFilter(name: "CIColorInvert") else { return nil }
+        filter.setValue(image, forKey: kCIInputImageKey)
+        let inverted =  filter.value(forKey: kCIOutputImageKey) as? CIImage
+        return inverted?.cgImage
     }
 }
