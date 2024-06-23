@@ -38,6 +38,14 @@ public final class AudioSpectrogram: NSObject, ObservableObject {
             }
             
         }.store(in: &bag)
+        
+        Task { [weak self] in
+            await self?.sessionQueue.setErrorCallback { error in
+                Task { @MainActor in
+                    self?.error = error
+                }
+            }
+        }
     }
     
     // MARK: Properties

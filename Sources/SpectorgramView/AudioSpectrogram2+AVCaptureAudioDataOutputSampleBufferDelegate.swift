@@ -11,9 +11,9 @@ import AVFoundation
 
 extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
  
-    @nonobjc func captureOutput(_ output: AVCaptureOutput,
-                       didOutput sampleBuffer: CMSampleBuffer,
-                       from connection: AVCaptureConnection) {
+    nonisolated public func captureOutput(_ output: AVCaptureOutput,
+                                          didOutput sampleBuffer: CMSampleBuffer,
+                                          from connection: AVCaptureConnection) {
 
         var audioBufferList = AudioBufferList()
         var blockBuffer: CMBlockBuffer?
@@ -35,30 +35,32 @@ extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
         /// The _Nyquist frequency_ is the highest frequency that a sampled system can properly
         /// reproduce and is half the sampling rate of such a system. Although  this app doesn't use
         /// `nyquistFrequency`,  you may find this code useful to add an overlay to the user interface.
-        if nyquistFrequency == nil {
-            let duration = Float(CMSampleBufferGetDuration(sampleBuffer).value)
-            let timescale = Float(CMSampleBufferGetDuration(sampleBuffer).timescale)
-            let numsamples = Float(CMSampleBufferGetNumSamples(sampleBuffer))
-            nyquistFrequency = 0.5 / (duration / timescale / numsamples)
-        }
-        
-        /// Because the audio spectrogram code requires exactly `sampleCount` (which the app defines
-        /// as 1024) samples, but audio sample buffers from AVFoundation may not always contain exactly
-        /// 1024 samples, the app adds the contents of each audio sample buffer to `rawAudioData`.
-        ///
-        /// The following code creates an array from `data` and appends it to  `audioData`:
-        if self.rawAudioData.count < AudioSpectrogram.sampleCount * 2 {
-            let actualSampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
+        Task { @MainActor in
+            if nyquistFrequency == nil {
+                let duration = Float(CMSampleBufferGetDuration(sampleBuffer).value)
+                let timescale = Float(CMSampleBufferGetDuration(sampleBuffer).timescale)
+                let numsamples = Float(CMSampleBufferGetNumSamples(sampleBuffer))
+                nyquistFrequency = 0.5 / (duration / timescale / numsamples)
+            }
             
-            let pointer = data.bindMemory(to: Int16.self,
-                                          capacity: actualSampleCount)
-            let buffer = UnsafeBufferPointer(start: pointer,
-                                             count: actualSampleCount)
+            /// Because the audio spectrogram code requires exactly `sampleCount` (which the app defines
+            /// as 1024) samples, but audio sample buffers from AVFoundation may not always contain exactly
+            /// 1024 samples, the app adds the contents of each audio sample buffer to `rawAudioData`.
+            ///
+            /// The following code creates an array from `data` and appends it to  `audioData`:
+            if self.rawAudioData.count < AudioSpectrogram.sampleCount * 2 {
+                let actualSampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
+                
+                let pointer = data.bindMemory(to: Int16.self,
+                                              capacity: actualSampleCount)
+                let buffer = UnsafeBufferPointer(start: pointer,
+                                                 count: actualSampleCount)
+                
+                rawAudioData.append(contentsOf: Array(buffer))
+            }
             
-            rawAudioData.append(contentsOf: Array(buffer))
+            process()
         }
-
-        process()
     }
     
     func process() {
@@ -120,7 +122,11 @@ actor SessionQueue {
     
     var requiresMicrophone = false
     
-    var onError: (@Sendable (SpectrogramError) -> Void)?
+    private var onError: (@Sendable (SpectrogramError) -> Void)?
+    
+    func setErrorCallback(_ callback: @escaping @Sendable (SpectrogramError) -> Void) {
+        onError = callback
+    }
     
     func configureCaptureSession(audioOutput: AVCaptureAudioDataOutput) {
         // Also note that:
@@ -214,3 +220,7 @@ actor SessionQueue {
 }
 
 extension AVCaptureAudioDataOutput: @unchecked @retroactive Sendable {}
+
+extension CMSampleBuffer: @unchecked @retroactive Sendable {}
+
+extension UnsafeMutableRawPointer: @unchecked @retroactive Sendable {}
