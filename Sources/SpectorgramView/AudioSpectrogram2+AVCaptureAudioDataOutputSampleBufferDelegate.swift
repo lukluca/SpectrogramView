@@ -120,12 +120,16 @@ extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
 actor SessionQueue {
     private lazy var captureSession = AVCaptureSession()
     
-    var requiresMicrophone = false
+    private var requiresMicrophone = false
     
     private var onError: (@Sendable (SpectrogramError) -> Void)?
     
     func setErrorCallback(_ callback: @escaping @Sendable (SpectrogramError) -> Void) {
         onError = callback
+    }
+    
+    func setRequiresMicrophone(_ value: Bool) {
+        requiresMicrophone = value
     }
     
     func configureCaptureSession(audioOutput: AVCaptureAudioDataOutput) {

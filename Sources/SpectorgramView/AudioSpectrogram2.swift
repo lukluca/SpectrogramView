@@ -32,9 +32,16 @@ public final class AudioSpectrogram: NSObject, ObservableObject {
                 return
             }
             if config.requiresMicrophone {
+                Task {
+                    await self.sessionQueue.setRequiresMicrophone(true)
+                }
                 self.configureCaptureSession()
                 self.audioOutput.setSampleBufferDelegate(self,
                                                          queue: captureQueue)
+            } else {
+                Task {
+                    await self.sessionQueue.setRequiresMicrophone(false)
+                }
             }
             
         }.store(in: &bag)
