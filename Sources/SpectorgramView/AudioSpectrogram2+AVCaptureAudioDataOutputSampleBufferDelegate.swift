@@ -85,6 +85,44 @@ extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
     }
     
     func configureCaptureSession() {
+        Task {
+            await sessionQueue.configureCaptureSession(audioOutput: audioOutput)
+        }
+    }
+    
+    /// Starts the audio spectrogram.
+    public func startRunning() {
+        if configuation.requiresMicrophone {
+            Task {
+                await sessionQueue.startRunning()
+            }
+        } else {
+            if !rawAudioData.isEmpty {
+                audioData = rawAudioData
+                process()
+            }
+        }
+    }
+    
+    /// Stops the audio spectrogram.
+    public func stopRunning() {
+        guard configuation.requiresMicrophone else {
+            return
+        }
+        Task {
+            await sessionQueue.stopRunning()
+        }
+    }
+}
+
+actor SessionQueue {
+    private lazy var captureSession = AVCaptureSession()
+    
+    var requiresMicrophone = false
+    
+    var onError: (@Sendable (SpectrogramError) -> Void)?
+    
+    func configureCaptureSession(audioOutput: AVCaptureAudioDataOutput) {
         // Also note that:
         //
         // When running in iOS, you need to add a "Privacy - Microphone Usage
@@ -94,24 +132,13 @@ extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
         // Description" entry to `Info.plist`, and select Audio Input and Camera
         // Access in the Resource Access category of Hardened Runtime.
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
-            case .authorized:
-                    break
-            case .notDetermined:
-                sessionQueue.suspend()
-                AVCaptureDevice.requestAccess(for: .audio,
-                                              completionHandler: { granted in
-                    if !granted {
-                        self.error = .requiresMicrophoneAccess
-                    } else {
-                        if self.configuation.requiresMicrophone {
-                            self.configureCaptureSession()
-                            self.sessionQueue.resume()
-                        }
-                    }
-                })
-                return
-            default:
-                self.error = .requiresMicrophoneAccess
+        case .authorized:
+            break
+        case .notDetermined:
+            requestAccess(audioOutput: audioOutput)
+            return
+        default:
+            self.onError?(.requiresMicrophoneAccess)
         }
         
         captureSession.beginConfiguration()
@@ -131,14 +158,14 @@ extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
             captureSession.addOutput(audioOutput)
         } else {
             captureSession.commitConfiguration()
-            self.error = .cantAddAudioOutput
+            self.onError?(.cantAddAudioOutput)
         }
 
         guard let microphone = AVCaptureDevice.default(.builtInMicrophone,
                                                        for: .audio,
                                                        position: .unspecified) else {
             captureSession.commitConfiguration()
-            self.error = .cantCreateMicrophone
+            self.onError?(.cantCreateMicrophone)
             return
         }
         
@@ -153,47 +180,37 @@ extension AudioSpectrogram: AVCaptureAudioDataOutputSampleBufferDelegate {
             
         } catch {
             captureSession.commitConfiguration()
-            self.error = .cantCreateMicrophoneDevice(error)
+            self.onError?(.cantCreateMicrophoneDevice(error))
         }
     }
     
-    /// Starts the audio spectrogram.
-    public func startRunning() {
-        if configuation.requiresMicrophone {
-            sessionQueue.async {
-                if AVCaptureDevice.authorizationStatus(for: .audio) == .authorized {
-                    Task { [weak self] in
-                        await self?.startRunningCaptureSession()
+    private func requestAccess(audioOutput: AVCaptureAudioDataOutput) {
+        AVCaptureDevice.requestAccess(for: .audio,
+                                      completionHandler: { granted in
+            
+            Task { [weak self] in
+                if !granted {
+                    await self?.onError?(.requiresMicrophoneAccess)
+                } else {
+                    if await self?.requiresMicrophone == true {
+                        await self?.configureCaptureSession(audioOutput: audioOutput)
                     }
                 }
             }
-        } else {
-            if !rawAudioData.isEmpty {
-                audioData = rawAudioData
-                process()
-            }
+        })
+    }
+     
+    func startRunning() {
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .authorized {
+            captureSession.startRunning()
         }
     }
     
-    /// Stops the audio spectrogram.
-    public func stopRunning() {
-        guard configuation.requiresMicrophone else {
-            return
+    func stopRunning() {
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .authorized {
+            captureSession.stopRunning()
         }
-        sessionQueue.async { [weak self] in
-            if AVCaptureDevice.authorizationStatus(for: .audio) == .authorized {
-                Task { [weak self] in
-                    await self?.stopRunningCaptureSession()
-                }
-            }
-        }
-    }
-    
-    private func startRunningCaptureSession() {
-        captureSession.startRunning()
-    }
-    
-    private func stopRunningCaptureSession() {
-        captureSession.stopRunning()
     }
 }
+
+extension AVCaptureAudioDataOutput: @unchecked @retroactive Sendable {}

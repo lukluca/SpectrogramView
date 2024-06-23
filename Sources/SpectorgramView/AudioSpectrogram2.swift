@@ -53,15 +53,12 @@ public final class AudioSpectrogram: NSObject, ObservableObject {
     /// Determines the overlap between frames.
     static let hopCount = 512
 
-    lazy var captureSession = AVCaptureSession()
     lazy var audioOutput = AVCaptureAudioDataOutput()
     lazy var captureQueue = DispatchQueue(label: "captureQueue",
                                           qos: .userInitiated,
                                           attributes: [],
                                           autoreleaseFrequency: .workItem)
-    lazy var sessionQueue = DispatchQueue(label: "sessionQueue",
-                                          attributes: [],
-                                          autoreleaseFrequency: .workItem)
+    lazy var sessionQueue = SessionQueue()
     
     let forwardDCT = vDSP.DCT(count: sampleCount,
                               transformType: .II)!
