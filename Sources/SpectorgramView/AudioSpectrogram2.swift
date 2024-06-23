@@ -363,8 +363,7 @@ private extension CGImage {
             if let result = inverted.cgImage {
                 return result
             }
-            
-            return CIContext().createCGImage(inverted, from: .infinite)
+            return CIContext().createCGImage(inverted, from: .init(origin: .zero, size: .init(width: width, height: height)))
         }
         
         return nil
